@@ -1,0 +1,3 @@
+używane_komendy.py
+README.txt
+vol3_z_wyjaśnieniami.py
