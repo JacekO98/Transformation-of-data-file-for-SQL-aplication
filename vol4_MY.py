@@ -1,25 +1,70 @@
 import pandas as pd
-file_path = 'C:\\Users\\jacuu\\PycharmProjects\\projekt\\Analiza_danych\\Transformacja pliku z podprogramami — GIT\\losowe_dane.xlsx'
-file = pd.read_excel(file_path, sheet_name='Sheet1', header=None)
-file = file.fillna('')
-podprogram_name = file.iloc[0, 1:]
-instructionPDF_path = file.iloc[1, 1:]
-measuresPDF_path = file.iloc[2, 1:]
-codeNumberPDF = []
-for _, row in file.iloc[3:].iterrows():
-    codeNumber = row.iloc[0]
-    for i, value in enumerate(row[1:], start=1):
-        value.lower()
-        if value == "x":
-            podprogram_name1 = podprogram_name[i]
-            instructionPDF = instructionPDF_path[i]
-            measuresPDF = measuresPDF_path[i]
-            codeNumberPDF.append((codeNumber,podprogram_name1, instructionPDF, measuresPDF))
+from pathlib import Path
 
 
-final_df = pd.DataFrame(codeNumberPDF, columns=['Kod detalu', 'Nazwa podprogramu', 'Ścieżka do instrukcji', 'Ścieżka do formatki pomiarowej'])
-grouped = final_df.groupby('Kod detalu').cumcount() + 1
-final_df['Numeracja'] = grouped
+def load_data(input_path: Path) -> pd.DataFrame:
+    """
+    Load raw exel file
+    """
+    return pd.read_excel(input_path, 'Sheet1', header=None)
 
-final_df_path = 'C:\\Users\\jacuu\\PycharmProjects\\projekt\\Analiza_danych\\Transformacja pliku z podprogramami — GIT\\final.xlsx'
-final_df.to_excel(final_df_path, index=False)
+
+def clean_data(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Clean loaded DataFrame
+    """
+    df = df.fillna('').map(lambda x: str(x).strip())
+    return df
+
+
+def transform_data(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Transform data, assignment underprogram name, and path to the part number
+    """
+    part_numbers = df.iloc[4:, 0]
+    first_name = df.iloc[0, 1:]
+    second_name = df.iloc[1, 1:]
+    third_name = df.iloc[2, 1:]
+    table = []
+
+    for index, row in df.iloc[4:].iterrows():
+        part_number = row.iloc[0]
+        for index, number in enumerate(row, start=1):
+            number.lower()
+            if number == 'x':
+                FName = first_name[index-1]
+                SName = second_name[index-1]
+                TName = third_name[index-1]
+                table.append((part_number, FName, SName, TName))
+    final_df = pd.DataFrame(table, columns=['Object Code', 'Subprogram Name', 'Path to instruction',
+                                                    'Path to measurement format'])
+
+    grouped = final_df.groupby('Object Code').cumcount() + 1
+    final_df['Occurrences'] = grouped
+
+    return final_df
+
+def save_file(input_path: Path, output_path: Path) -> None:
+    """
+    Full transformation pipeline.
+    """
+    raw_data = load_data(input_path)
+    cleaned_data = clean_data(raw_data)
+    result = transform_data(cleaned_data)
+    result.to_excel(output_path, index=False)
+
+if __name__ == '__main__':
+    BASE_DIR = Path(__file__).resolve().parent
+
+    input_path = BASE_DIR / "input" / "data_input.xlsx"
+    output_path = BASE_DIR / "output" / "file_for_SQL.xlsx"
+    save_file(input_path, output_path)
+
+
+
+
+
+
+
+
+
